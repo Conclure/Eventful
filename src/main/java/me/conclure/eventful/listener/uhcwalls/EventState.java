@@ -1,18 +1,17 @@
 package me.conclure.eventful.listener.uhcwalls;
 
 import me.conclure.eventful.listener.EventObserver;
-import me.conclure.eventful.nullability.Nilable;
-import org.bukkit.entity.Player;
+import me.conclure.eventful.nullability.Nil;
 
 import java.util.UUID;
 
 sealed interface EventState extends EventObserver permits Game, Lobby {
-    default Nilable<Lobby> asLobby() {
-        return Nilable.absent();
+    default Nil<Lobby> asLobby() {
+        return Nil.absent();
     }
 
-    default Nilable<Game> asGame() {
-        return Nilable.absent();
+    default Nil<Game> asGame() {
+        return Nil.absent();
     }
 
     boolean containsPlayer(UUID uuid);

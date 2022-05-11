@@ -10,20 +10,33 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public non-sealed interface PresentNilable<T> extends Nilable<T> {
+public sealed interface PresentNil<T> extends Nil<T> permits PresentNil.Impl {
 
-    static <T> PresentNilable<T> nonNull(T value) {
-        Objects.requireNonNull(value);
-        return () -> value;
+    final class Impl<T> implements PresentNil<T> {
+        private final T value;
+
+        private Impl(T value) {
+            Objects.requireNonNull(value);
+            this.value = value;
+        }
+
+        @Override
+        public @NotNull T value() {
+            return this.value;
+        }
+    }
+
+    static <T> PresentNil<T> nonNull(T value) {
+        return new Impl<>(value);
     }
 
     @Override
-    default AbsentNilable<T> assertAbsent() {
+    default AbsentNil<T> assertAbsent() {
         throw new AssertionError();
     }
 
     @Override
-    default PresentNilable<T> assertPresent() {
+    default PresentNil<T> assertPresent() {
         return this;
     }
 
@@ -42,12 +55,17 @@ public non-sealed interface PresentNilable<T> extends Nilable<T> {
     }
 
     @Override
-    default PresentNilable<T> or(@Nullable T elseValue) {
+    default PresentNil<T> or(@Nullable T elseValue) {
         return this;
     }
 
     @Override
-    default PresentNilable<T> orGet(Supplier<@Nullable T> supplier) {
+    default PresentNil<T> orGet(Supplier<@Nullable T> supplier) {
+        return this;
+    }
+
+    @Override
+    default PresentNil<T> orFlatGet(Supplier<Nil<T>> supplier) {
         return this;
     }
 
@@ -62,51 +80,51 @@ public non-sealed interface PresentNilable<T> extends Nilable<T> {
     }
 
     @Override
-    default Nilable<T> filter(Predicate<T> predicate) {
+    default Nil<T> filter(Predicate<T> predicate) {
         if (predicate.test(this.value())) {
             return this;
         }
-        return Nilable.absent();
+        return Nil.absent();
     }
 
     @Override
-    default PresentNilable<T> ifPresent(Consumer<T> consumer) {
+    default PresentNil<T> ifPresent(Consumer<T> consumer) {
         consumer.accept(this.value());
         return this;
     }
 
     @Override
-    default PresentNilable<T> ifPresentOrElse(Consumer<T> consumer, Runnable runnable) {
+    default PresentNil<T> ifPresentOrElse(Consumer<T> consumer, Runnable runnable) {
         consumer.accept(this.value());
         return this;
     }
 
     @Override
-    default PresentNilable<T> ifAbsent(Runnable runnable) {
+    default PresentNil<T> ifAbsent(Runnable runnable) {
         return this;
     }
 
     @Override
-    default PresentNilable<T> orThrow(Throwable throwable) {
+    default PresentNil<T> orThrow(Throwable throwable) {
         return this;
     }
 
     @Override
-    default PresentNilable<T> orGetAndThrow(Supplier<Throwable> supplier) {
+    default PresentNil<T> orGetAndThrow(Supplier<Throwable> supplier) {
         return this;
     }
 
     @Override
-    default <R> Nilable<R> map(Function<T, @Nullable R> function) {
+    default <R> Nil<R> map(Function<T, @Nullable R> function) {
         R result = function.apply(this.value());
         if (result == null) {
-            return Nilable.absent();
+            return Nil.absent();
         }
-        return Nilable.present(result);
+        return Nil.present(result);
     }
 
     @Override
-    default <R> Nilable<R> flatMap(Function<T, Nilable<R>> function) {
+    default <R> Nil<R> flatMap(Function<T, Nil<R>> function) {
         return function.apply(this.value());
     }
 

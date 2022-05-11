@@ -1,4 +1,4 @@
-package me.conclure.eventful.nullability;
+package me.conclure.eventful.shared.nullability;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -8,21 +8,26 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@SuppressWarnings("NullableProblems")
-public non-sealed interface AbsentNilable<T> extends Nilable<T> {
-    AbsentNilable<?> instance = new AbsentNilable<>() {};
+public sealed interface AbsentNil<T> extends Nil<T> permits AbsentNil.Impl {
+    final class Impl<T> implements AbsentNil<T> {
+        private static final AbsentNil<?> instance = new Impl<>();
 
-    static <T> AbsentNilable<T> getInstance() {
-        return (AbsentNilable<T>) instance;
+        private static <T> AbsentNil<T> instance() {
+            return (AbsentNil<T>) Impl.instance;
+        }
+    }
+
+    static <T> AbsentNil<T> getInstance() {
+        return Impl.instance();
     }
 
     @Override
-    default AbsentNilable<T> assertAbsent() {
+    default AbsentNil<T> assertAbsent() {
         return this;
     }
 
     @Override
-    default PresentNilable<T> assertPresent() {
+    default PresentNil<T> assertPresent() {
         throw new AssertionError();
     }
 
@@ -43,20 +48,25 @@ public non-sealed interface AbsentNilable<T> extends Nilable<T> {
     }
 
     @Override
-    default Nilable<T> or(@Nullable T elseValue) {
+    default Nil<T> or(@Nullable T elseValue) {
         if (elseValue == null) {
             return this;
         }
-        return Nilable.present(elseValue);
+        return Nil.present(elseValue);
     }
 
     @Override
-    default Nilable<T> orGet(Supplier<@Nullable T> supplier) {
+    default Nil<T> orGet(Supplier<@Nullable T> supplier) {
         T elseValue = supplier.get();
         if (elseValue == null) {
             return this;
         }
-        return Nilable.present(elseValue);
+        return Nil.present(elseValue);
+    }
+
+    @Override
+    default Nil<T> orFlatGet(Supplier<Nil<T>> supplier) {
+        return supplier.get();
     }
 
     @Override
@@ -70,47 +80,52 @@ public non-sealed interface AbsentNilable<T> extends Nilable<T> {
     }
 
     @Override
-    default AbsentNilable<T> filter(Predicate<T> predicate) {
+    default AbsentNil<T> filter(Predicate<T> predicate) {
         return this;
     }
 
     @Override
-    default AbsentNilable<T> ifPresent(Consumer<T> consumer) {
+    default AbsentNil<T> ifPresent(Consumer<T> consumer) {
         return this;
     }
 
     @Override
-    default AbsentNilable<T> ifPresentOrElse(Consumer<T> consumer, Runnable runnable) {
+    default AbsentNil<T> ifPresentOrElse(Consumer<T> consumer, Runnable runnable) {
         runnable.run();
         return this;
     }
 
     @Override
-    default AbsentNilable<T> ifAbsent(Runnable runnable) {
+    default AbsentNil<T> ifAbsent(Runnable runnable) {
         runnable.run();
         return this;
     }
 
     @Override
-    default PresentNilable<T> orThrow(Throwable throwable) {
+    default PresentNil<T> orThrow(Throwable throwable) {
         SneakyThrower.sneakyThrow(throwable);
         throw new AssertionError("Unreachable code");
     }
 
     @Override
-    default PresentNilable<T> orGetAndThrow(Supplier<Throwable> supplier) {
+    default PresentNil<T> orGetAndThrow(Supplier<Throwable> supplier) {
         SneakyThrower.sneakyThrow(supplier.get());
         throw new AssertionError("Unreachable code");
     }
 
     @Override
-    default <R> AbsentNilable<R> map(Function<T, @Nullable R> function) {
-        return Nilable.absent();
+    default <R> AbsentNil<R> map(Function<T, Nil<R>> function) {
+        return Nil.absent();
     }
 
     @Override
-    default <R> AbsentNilable<R> flatMap(Function<T, Nilable<R>> function) {
-        return Nilable.absent();
+    default IntNil mapToInt(Function<T, IntNil> function) {
+        return IntNil.absent();
+    }
+
+    @Override
+    default DoubleNil mapToDouble(Function<T, DoubleNil> function) {
+        return DoubleNil.absent();
     }
 
     @Override

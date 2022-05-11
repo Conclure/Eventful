@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
-import me.conclure.eventful.nullability.Nilable;
+import me.conclure.eventful.nullability.Nil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -17,8 +17,8 @@ public class MappingImpl<T,I> implements Mapping<T,I> {
     }
 
     @Override
-    public Nilable<T> get(I id) {
-        return Nilable.optional(this.map.get(id));
+    public Nil<T> get(I id) {
+        return Nil.optional(this.map.get(id));
     }
 
     @Override

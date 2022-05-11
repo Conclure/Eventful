@@ -2,7 +2,7 @@ package me.conclure.eventful.model;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.UnmodifiableIterator;
-import me.conclure.eventful.nullability.Nilable;
+import me.conclure.eventful.nullability.Nil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -19,7 +19,7 @@ public interface Registry<T,I> extends Iterable<T> {
         return new RegistryImpl<>(new ConcurrentHashMap<>(1,.9f), idMapper);
     }
 
-    Nilable<T> get(I id);
+    Nil<T> get(I id);
 
     I getId(T object);
 

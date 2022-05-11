@@ -13,17 +13,17 @@ import org.bukkit.event.player.PlayerLoginEvent;
 
 public class GeneralListener implements Listener {
     private final Mapping<Location,String> locationMapping;
-    private final EventController eventController;
+    private final EventManager eventManager;
 
-    public GeneralListener(Mapping<Location, String> locationMapping, EventController eventController) {
+    public GeneralListener(Mapping<Location, String> locationMapping, EventManager eventManager) {
         this.locationMapping = locationMapping;
-        this.eventController = eventController;
+        this.eventManager = eventManager;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onLogin(PlayerLoginEvent event) {
         Player player = event.getPlayer();
-        if (this.eventController.isPlayerInEvent(player.getUniqueId())) {
+        if (this.eventManager.isPlayerInEvent(player.getUniqueId())) {
             return;
         }
         Location location = this.locationMapping.get("spawn")

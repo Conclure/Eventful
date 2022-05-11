@@ -1,7 +1,7 @@
 package me.conclure.eventful.listener.uhcwalls;
 
 import com.google.common.collect.ImmutableSet;
-import me.conclure.eventful.nullability.Nilable;
+import me.conclure.eventful.nullability.Nil;
 import me.conclure.eventful.utility.Assertion;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -11,7 +11,6 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 final class Lobby implements EventState {
     private static final int MIN_COUNT = 4;
@@ -31,8 +30,8 @@ final class Lobby implements EventState {
     }
 
     @Override
-    public Nilable<Lobby> asLobby() {
-        return Nilable.present(this);
+    public Nil<Lobby> asLobby() {
+        return Nil.present(this);
     }
 
     @Override

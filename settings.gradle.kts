@@ -8,3 +8,4 @@ pluginManagement {
 
 rootProject.name = "Eventful"
 
+include("common","game","hub","proxy")

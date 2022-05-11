@@ -2,7 +2,7 @@ package me.conclure.eventful.model;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.UnmodifiableIterator;
-import me.conclure.eventful.nullability.Nilable;
+import me.conclure.eventful.nullability.Nil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -22,7 +22,7 @@ public interface Repository<T,I> extends Iterable<T> {
 
     I getId(T object);
 
-    Nilable<T> getIfPresent(I id);
+    Nil<T> getIfPresent(I id);
 
     boolean remove(I id);
 

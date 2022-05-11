@@ -1,13 +1,11 @@
 package me.conclure.eventful.listener.uhcwalls;
 
 import com.google.common.collect.ImmutableSet;
-import me.conclure.eventful.nullability.Nilable;
+import me.conclure.eventful.nullability.Nil;
 import me.conclure.eventful.utility.Assertion;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,8 +31,8 @@ final class Game implements EventState {
     }
 
     @Override
-    public Nilable<Game> asGame() {
-        return Nilable.present(this);
+    public Nil<Game> asGame() {
+        return Nil.present(this);
     }
 
     @Override

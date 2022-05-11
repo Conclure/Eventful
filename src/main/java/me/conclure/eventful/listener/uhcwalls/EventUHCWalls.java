@@ -1,9 +1,10 @@
 package me.conclure.eventful.listener.uhcwalls;
 
 import me.conclure.eventful.listener.Event;
+import me.conclure.eventful.listener.EventContext;
 import me.conclure.eventful.model.Mapping;
-import me.conclure.eventful.nullability.Nilable;
-import org.bukkit.Location;
+import me.conclure.eventful.nullability.Nil;
+import org.bukkit.*;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -18,6 +19,7 @@ public class EventUHCWalls implements Event {
     public EventUHCWalls(String id, Mapping<Location,String> locationMapping) {
         this.id = id;
         this.locationMapping = locationMapping;
+
     }
 
     @Override
@@ -26,19 +28,22 @@ public class EventUHCWalls implements Event {
     }
 
     @Override
-    public Result initialize() {
+    public Result initialize(EventContext context) {
         boolean isEventAlreadyRunning = this.eventState != null;
         if (isEventAlreadyRunning) {
             return Result.FAIL;
         }
-        Nilable<Location> locationNilable = this.locationMapping.get(this.id);
+        Nil<Location> locationNilable = this.locationMapping.get(this.id);
 
         if (locationNilable.isAbsent()) {
             return Result.FAIL;
         }
-
         Location location = locationNilable.assertPresent().value();
+        for (int i = 0; i < 100; i++) {
+            Bukkit.createWorld(WorldCreator.name("t-"+i));
+        }
         Lobby lobby = new Lobby(location);
+
         lobby.teleportAll();
         this.eventState = lobby;
         return Result.SUCCESS;
@@ -46,7 +51,7 @@ public class EventUHCWalls implements Event {
 
     @Override
     public Result start() {
-        Nilable<Lobby> lobbyNilable = this.eventState.asLobby();
+        Nil<Lobby> lobbyNilable = this.eventState.asLobby();
         boolean isLobbyAbsent = lobbyNilable.isAbsent();
 
         if (isLobbyAbsent) {
