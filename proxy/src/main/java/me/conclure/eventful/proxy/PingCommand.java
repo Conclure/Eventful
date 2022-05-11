@@ -9,6 +9,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.velocitypowered.api.command.CommandSource;
 import me.conclure.eventful.shared.loggin.LoggerAdapter;
 import me.conclure.eventful.shared.messaging.MessageCenter;
+import me.conclure.eventful.shared.messaging.MessageDraft;
 import me.conclure.eventful.shared.messaging.type.MessageTypes;
 
 public class PingCommand implements CommandSupplier {
@@ -27,9 +28,11 @@ public class PingCommand implements CommandSupplier {
                         RequiredArgumentBuilder.<CommandSource,String>argument("message",greedyString())
                                 .executes(ctx -> {
                                     String message = ctx.getArgument("message", String.class);
-                                    MessageTypes.PING.send(message.split(" "),this.messageCenter).thenRun(() -> {
-                                        this.logger.infof("[Messaging] (PING) %s", message);
-                                    });
+                                    MessageDraft<String[]> messageDraft = MessageTypes.PING.create(message.split(" "));
+                                    messageDraft.send(this.messageCenter)
+                                            .thenRun(() -> {
+                                                this.logger.infof("[Messaging] (PING) %s", message);
+                                            });
                                     return Command.SINGLE_SUCCESS;
                                 })
                 );

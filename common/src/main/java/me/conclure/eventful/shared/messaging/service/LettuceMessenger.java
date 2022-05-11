@@ -28,9 +28,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LettuceMessenger implements Messenger {
     private final Map<String, Set<MessageReader>> callbackMap;
     private final RedisClient redisClient;
-    private StatefulRedisPubSubConnection<String,String> writeConnection;
-    private StatefulRedisPubSubConnection<String,String> readConnection;
-    private Lock lock;
+    private Nil<StatefulRedisPubSubConnection<String,String>> writeConnection = Nil.absent();
+    private Nil<StatefulRedisPubSubConnection<String,String>> readConnection = Nil.absent();
+    private Nil<Lock> lock = Nil.absent();
     private volatile State state = State.VIRGIN;
 
     enum State {
@@ -54,9 +54,9 @@ public class LettuceMessenger implements Messenger {
     }
 
     private void bootUpConnections() {
-        this.writeConnection = this.redisClient.connectPubSub();
-        this.readConnection = this.redisClient.connectPubSub();
-        this.readConnection.addListener(new IncomingMessageHandler());
+        this.writeConnection = Nil.present(this.redisClient.connectPubSub());
+        this.readConnection = Nil.present(this.redisClient.connectPubSub());
+        this.readConnection.assertPresent().value().addListener(new IncomingMessageHandler());
     }
 
     @Override
@@ -75,12 +75,13 @@ public class LettuceMessenger implements Messenger {
     public void bootUp() {
         this.ensureVirginState();
         this.state = State.BOOTED;
-        this.lock = new ReentrantLock(true);
-        if (this.lock.tryLock()) {
+        this.lock = Nil.present(new ReentrantLock(true));
+        Lock lock = this.lock.assertPresent().value();
+        if (lock.tryLock()) {
             try {
                 this.bootUpConnections();
             } finally {
-                this.lock.unlock();
+                lock.unlock();
             }
         } else {
             throw new IllegalStateException("Lock was stolen before completing boot up");
@@ -102,10 +103,8 @@ public class LettuceMessenger implements Messenger {
     }
 
     private void closeConnections() {
-        Objects.requireNonNull(this.writeConnection);
-        Objects.requireNonNull(this.readConnection);
-        this.readConnection.close();
-        this.writeConnection.close();
+        this.readConnection.assertPresent().value().close();
+        this.writeConnection.assertPresent().value().close();
     }
 
     private void finalizeTermination() {
@@ -121,14 +120,14 @@ public class LettuceMessenger implements Messenger {
     @Override
     public void terminate() {
         this.ensureBootedStateForTermination();
-        Objects.requireNonNull(this.lock);
-        this.lock.lock();
+        Lock lock = this.lock.assertPresent().value();
+        lock.lock();
         try {
             this.closeConnections();
         } finally {
             this.finalizeTermination();
-            this.lock.unlock();
-            this.lock = null;
+            lock.unlock();
+            this.lock = Nil.absent();
         }
     }
 
@@ -141,7 +140,9 @@ public class LettuceMessenger implements Messenger {
         try (var arrOut = new ByteArrayOutputStream();
              var dataOut = new DataOutputStream(arrOut)) {
             writer.write(dataOut);
-            return this.writeConnection.async()
+            return this.writeConnection.assertPresent()
+                    .value()
+                    .async()
                     .publish(channel, arrOut.toString(StandardCharsets.UTF_8))
                     .toCompletableFuture()
                     .thenRun(() -> {});
@@ -165,7 +166,9 @@ public class LettuceMessenger implements Messenger {
             return new HashSet<>(1);
         });
         readers.add(reader);
-        return this.readConnection.async()
+        return this.readConnection.assertPresent()
+                .value()
+                .async()
                 .subscribe(channel)
                 .toCompletableFuture()
                 .thenRun(() -> {});
@@ -178,18 +181,21 @@ public class LettuceMessenger implements Messenger {
         if (hasWrongState) {
             return stateCheck.assertPresent().value();
         }
-        this.lock.lock();
+        Lock lock = this.lock.assertPresent().value();
+        lock.lock();
         try {
             return this.addReaderToCallbackMap(channel, reader);
         } finally {
-            this.lock.unlock();
+            lock.unlock();
         }
     }
 
     private CompletableFuture<Void> removeReaderFromCallbackMap(String channel) {
         Set<MessageReader> readers = this.callbackMap.getOrDefault(channel, Collections.emptySet());
         readers.clear();
-        return this.readConnection.async()
+        return this.readConnection.assertPresent()
+                .value()
+                .async()
                 .unsubscribe(channel)
                 .toCompletableFuture()
                 .thenRun(() -> {
@@ -203,11 +209,12 @@ public class LettuceMessenger implements Messenger {
         if (hasWrongState) {
             return stateCheck.assertPresent().value();
         }
-        this.lock.lock();
+        Lock lock = this.lock.assertPresent().value();
+        lock.lock();
         try {
             return this.removeReaderFromCallbackMap(channel);
         } finally {
-            this.lock.unlock();
+            lock.unlock();
         }
     }
 

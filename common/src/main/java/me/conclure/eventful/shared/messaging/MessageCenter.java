@@ -48,12 +48,12 @@ public class MessageCenter {
         return new Builder();
     }
 
-    public <T> CompletableFuture<Void> send(Message<T> message) {
+    public <T> CompletableFuture<Void> send(MessageDraft<T> message) {
         MessageType<T> messageType = message.type();
         return this.messenger.publish(this.channel.toString(), out -> {
             out.writeUTF(this.signature);
             out.writeInt(messageType.id());
-            messageType.fromMessage(message,new MessageOut(out));
+            messageType.fromMessage(message.sign(this),new MessageOut(out));
         });
     }
 
@@ -89,7 +89,7 @@ public class MessageCenter {
             MessageType<?> messageType = this.registry.get(messageId)
                     .orGetAndThrow(() -> new RuntimeException("Invalid message id"))
                     .value();
-            Message message = messageType.toMessage(new MessageIn(in)).build(senderSignature);
+            Message message = messageType.toMessage(new MessageIn(in)).sign(this);
             List<MessageObserver<?>> observers = this.listenerMap.getOrDefault(messageType, Collections.emptyList());
 
             for (MessageObserver<?> observer : observers) {
@@ -120,7 +120,8 @@ public class MessageCenter {
         }
 
         public Builder fromMessagingInfo(MessagingInfo messagingInfo) {
-            return this.signature(messagingInfo.signature()).channel(messagingInfo.channel());
+            return this.signature(messagingInfo.signature())
+                    .channel(messagingInfo.channel());
         }
 
         public Builder registry(Registry<MessageType<?>, Integer> registry) {

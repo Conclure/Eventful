@@ -53,18 +53,18 @@ public class MainRunner {
             return thread;
         });
         MessageTypes.INT.register(hub, message -> {
-            Integer unwrap = message.unwrap();
+            Integer unwrap = message.content();
             System.out.printf("hub received - %s\n thread - %s\n",unwrap,Thread.currentThread());
         });
 
         MessageTypes.INT.register(game, message -> {
-            Integer unwrap = message.unwrap();
+            Integer unwrap = message.content();
             System.out.printf("game received - %s\n thread - %s\n",unwrap,Thread.currentThread());
         },executor);
 
         sleep(5000);
-        MessageTypes.INT.send(3,hub);
-        MessageTypes.INT.send(4,game);
+        MessageTypes.INT.create(3).send(hub);
+        MessageTypes.INT.create(4).send(game);
         sleep(5000);
         messenger.terminate();
     }

@@ -8,6 +8,8 @@ import me.conclure.eventful.shared.configuration.DefaultConfiguration;
 import me.conclure.eventful.shared.configuration.PathedConfigurationFactory;
 import me.conclure.eventful.shared.loggin.LoggerAdapter;
 import me.conclure.eventful.shared.messaging.MessageCenter;
+import me.conclure.eventful.shared.messaging.MessageDraft;
+import me.conclure.eventful.shared.messaging.impl.PingMessageObserver;
 import me.conclure.eventful.shared.messaging.service.LettuceMessenger;
 import me.conclure.eventful.shared.messaging.service.Messenger;
 import me.conclure.eventful.shared.messaging.type.MessageType;
@@ -58,11 +60,7 @@ public class HubBootstrap {
                 .registry(this.messageRegistry)
                 .build();
         this.messageCenter.bootUp();
-        this.messageCenter.register(MessageTypes.PING,message -> {
-            String signature = message.senderSignature();
-            String content = String.join(" ", message.unwrap());
-            this.logger.infof("[Messaging] (PONG f/%s) %s", signature, content);
-        });
+        this.messageCenter.register(MessageTypes.PING,new PingMessageObserver(this.logger));
     }
 
     public void enable() throws Exception {
@@ -70,7 +68,8 @@ public class HubBootstrap {
         this.setupMessageService();
         PluginCommand ping = this.plugin.getCommand("ping");
         ping.setExecutor((sender,cmd,label,args) -> {
-            MessageTypes.PING.send(args,this.messageCenter).thenRun(() -> {
+            MessageDraft<String[]> messageDraft = MessageTypes.PING.create(args);
+            messageDraft.send(this.messageCenter).thenRun(() -> {
                 String message = String.join(" ",args);
                 this.logger.infof("[Messaging] (PING) %s", message);
             });

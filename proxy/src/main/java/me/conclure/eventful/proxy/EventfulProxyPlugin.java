@@ -13,6 +13,7 @@ import me.conclure.eventful.shared.configuration.PathedConfigurationFactory;
 import me.conclure.eventful.shared.loggin.LoggerAdapter;
 import me.conclure.eventful.shared.loggin.Slf4jLoggerAdapter;
 import me.conclure.eventful.shared.messaging.MessageCenter;
+import me.conclure.eventful.shared.messaging.impl.PingMessageObserver;
 import me.conclure.eventful.shared.messaging.service.LettuceMessenger;
 import me.conclure.eventful.shared.messaging.service.Messenger;
 import me.conclure.eventful.shared.messaging.type.MessageType;
@@ -65,11 +66,7 @@ public class EventfulProxyPlugin {
                 .registry(this.messageRegistry)
                 .build();
         this.messageCenter.bootUp();
-        this.messageCenter.register(MessageTypes.PING,message -> {
-            String signature = message.senderSignature();
-            String content = String.join(" ", message.unwrap());
-            this.logger.infof("[Messaging] (PONG f/%s) %s", signature, content);
-        });
+        this.messageCenter.register(MessageTypes.PING,new PingMessageObserver(this.logger));
     }
 
     @Subscribe

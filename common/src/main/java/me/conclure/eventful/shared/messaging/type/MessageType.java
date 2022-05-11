@@ -3,6 +3,7 @@ package me.conclure.eventful.shared.messaging.type;
 import me.conclure.eventful.shared.Utility;
 import me.conclure.eventful.shared.messaging.Message;
 import me.conclure.eventful.shared.messaging.MessageCenter;
+import me.conclure.eventful.shared.messaging.MessageDraft;
 import me.conclure.eventful.shared.messaging.MessageObserver;
 import me.conclure.eventful.shared.messaging.stream.MessageIn;
 import me.conclure.eventful.shared.messaging.stream.MessageOut;
@@ -27,25 +28,15 @@ public abstract class MessageType<T> {
         center.register(this,observer,executor);
     }
 
-    public Message.Builder<T> builder(T value) {
-        return Message.builder(this).content(value);
-    }
-
-    @Utility
-    public Message<T> create(T value, String signature) {
-        return this.builder(value).build(signature);
-    }
-
-    @Utility
-    public CompletableFuture<Void> send(T value, MessageCenter center) {
-        return center.send(this.create(value,center.signature()));
-    }
-
     public int id() {
         return this.id;
     }
 
-    public abstract Message.Builder<T> toMessage(MessageIn in);
+    public MessageDraft<T> create(T content) {
+        return new MessageDraft<>(content,this);
+    }
+
+    public abstract MessageDraft<T> toMessage(MessageIn in);
 
     public abstract void fromMessage(Message<T> message, MessageOut out);
 }
