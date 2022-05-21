@@ -22,8 +22,13 @@ public class MessageDraft<T> {
         return this.type;
     }
 
+    public Message<T> sign(String signature) {
+        return new Message<>(this,signature);
+    }
+
+    @Utility
     public Message<T> sign(MessageCenter center) {
-        return new Message<>(this,center);
+        return this.sign(center.signature());
     }
 
     @Utility

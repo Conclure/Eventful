@@ -4,12 +4,15 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.resource.ClientResources;
 import me.conclure.eventful.shared.collection.Registry;
+import me.conclure.eventful.shared.config.RedisInfo;
 import me.conclure.eventful.shared.messaging.*;
 import me.conclure.eventful.shared.messaging.service.LettuceMessenger;
 import me.conclure.eventful.shared.messaging.service.Messenger;
 import me.conclure.eventful.shared.messaging.type.MessageType;
 import me.conclure.eventful.shared.messaging.type.MessageTypes;
+import me.conclure.eventful.shared.nullability.Nil;
 
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,12 +22,14 @@ public class MainRunner {
     public static void main(String[] args) throws InterruptedException {
         Registry<MessageType<?>, Integer> messageRegistry = Registry.createThreadSafe(MessageType::id);
         MessageTypes.registerTo(messageRegistry);
-        Messenger messenger = new LettuceMessenger(RedisClient.create(ClientResources.builder()
-                        .build(),
-                RedisURI.builder()
-                        .withHost("localhost")
-                        .withPort(6379)
-                .build()));
+        Messenger messenger = LettuceMessenger.create(
+                RedisInfo.create(
+                        6379,
+                        "localhost",
+                        Nil.absent(),
+                        Nil.absent(),
+                        false
+                ));
         messenger.bootUp();
         messenger.subscribe("aaa",reader -> {
             System.out.println(reader.readUTF());

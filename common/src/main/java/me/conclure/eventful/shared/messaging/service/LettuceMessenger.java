@@ -18,20 +18,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LettuceMessenger implements Messenger {
+    static final ExceptionHandler defaultHandler = Throwable::printStackTrace;
+
     private final Map<String, Set<MessageReader>> callbackMap;
     private final RedisClient redisClient;
+    private final ExceptionHandler exceptionHandler;
     private Nil<StatefulRedisPubSubConnection<String,String>> writeConnection = Nil.absent();
     private Nil<StatefulRedisPubSubConnection<String,String>> readConnection = Nil.absent();
     private Nil<Lock> lock = Nil.absent();
-    private volatile State state = State.VIRGIN;
+    private State state = State.VIRGIN;
 
     enum State {
         VIRGIN,
@@ -39,18 +41,23 @@ public class LettuceMessenger implements Messenger {
         TERMINATED
     }
 
-    public LettuceMessenger(RedisClient redisClient) {
+    public LettuceMessenger(RedisClient redisClient, ExceptionHandler exceptionHandler) {
         this.redisClient = redisClient;
+        this.exceptionHandler = exceptionHandler;
         this.callbackMap = new HashMap<>();
     }
 
-    public static LettuceMessenger create(RedisInfo info) {
+    public static LettuceMessenger create(RedisInfo info, ExceptionHandler exceptionHandler) {
         RedisURI uri = RedisURI.create(info.address(),info.port());
         uri.setSsl(info.isSSL());
         info.password().ifPresent(uri::setPassword);
         info.username().ifPresent(uri::setUsername);
 
-        return new LettuceMessenger(RedisClient.create(uri));
+        return new LettuceMessenger(RedisClient.create(uri), exceptionHandler);
+    }
+
+    public static LettuceMessenger create(RedisInfo info) {
+        return create(info,defaultHandler);
     }
 
     private void bootUpConnections() {
@@ -74,12 +81,12 @@ public class LettuceMessenger implements Messenger {
     @Override
     public void bootUp() {
         this.ensureVirginState();
-        this.state = State.BOOTED;
         this.lock = Nil.present(new ReentrantLock(true));
         Lock lock = this.lock.assertPresent().value();
         if (lock.tryLock()) {
             try {
                 this.bootUpConnections();
+                this.state = State.BOOTED;
             } finally {
                 lock.unlock();
             }
@@ -137,18 +144,20 @@ public class LettuceMessenger implements Messenger {
     }
 
     private CompletableFuture<Void> writeAndSend(String channel, MessageWriter writer) {
-        try (var arrOut = new ByteArrayOutputStream();
-             var dataOut = new DataOutputStream(arrOut)) {
-            writer.write(dataOut);
-            return this.writeConnection.assertPresent()
-                    .value()
-                    .async()
-                    .publish(channel, arrOut.toString(StandardCharsets.UTF_8))
-                    .toCompletableFuture()
-                    .thenRun(() -> {});
-        } catch (IOException e) {
-            return CompletableFuture.failedFuture(e);
-        }
+        return CompletableFuture.runAsync(() -> {
+            try (var arrOut = new ByteArrayOutputStream();
+                 var dataOut = new DataOutputStream(arrOut)) {
+                writer.write(dataOut);
+                this.writeConnection.assertPresent()
+                        .value()
+                        .async()
+                        .publish(channel, arrOut.toString(StandardCharsets.UTF_8))
+                        .toCompletableFuture()
+                        .join();
+            } catch (IOException e) {
+                throw new CompletionException(e);
+            }
+        });
     }
 
     @Override
@@ -181,13 +190,15 @@ public class LettuceMessenger implements Messenger {
         if (hasWrongState) {
             return stateCheck.assertPresent().value();
         }
-        Lock lock = this.lock.assertPresent().value();
-        lock.lock();
-        try {
-            return this.addReaderToCallbackMap(channel, reader);
-        } finally {
-            lock.unlock();
-        }
+        return CompletableFuture.runAsync(() -> {
+            Lock lock = this.lock.assertPresent().value();
+            lock.lock();
+            try {
+                this.addReaderToCallbackMap(channel, reader).join();
+            } finally {
+                lock.unlock();
+            }
+        });
     }
 
     private CompletableFuture<Void> removeReaderFromCallbackMap(String channel) {
@@ -198,8 +209,7 @@ public class LettuceMessenger implements Messenger {
                 .async()
                 .unsubscribe(channel)
                 .toCompletableFuture()
-                .thenRun(() -> {
-                });
+                .thenRun(() -> {});
     }
 
     @Override
@@ -209,13 +219,15 @@ public class LettuceMessenger implements Messenger {
         if (hasWrongState) {
             return stateCheck.assertPresent().value();
         }
-        Lock lock = this.lock.assertPresent().value();
-        lock.lock();
-        try {
-            return this.removeReaderFromCallbackMap(channel);
-        } finally {
-            lock.unlock();
-        }
+        return CompletableFuture.runAsync(() -> {
+            Lock lock = this.lock.assertPresent().value();
+            lock.lock();
+            try {
+                this.removeReaderFromCallbackMap(channel).join();
+            } finally {
+                lock.unlock();
+            }
+        });
     }
 
     private final class IncomingMessageHandler implements RedisPubSubListener<String, String> {
@@ -229,7 +241,7 @@ public class LettuceMessenger implements Messenger {
                      var dataIn = new DataInputStream(arrIn)) {
                     reader.read(dataIn);
                 } catch (Exception e) {
-                    new RuntimeException(e).printStackTrace();
+                    LettuceMessenger.this.exceptionHandler.handleException(e);
                 }
             }
         }

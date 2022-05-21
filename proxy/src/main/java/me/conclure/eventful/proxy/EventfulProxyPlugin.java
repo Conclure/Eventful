@@ -62,6 +62,7 @@ public class EventfulProxyPlugin {
         messenger.bootUp();
         this.messageCenter = MessageCenter.builder()
                 .messenger(messenger)
+                .logger(this.logger)
                 .fromMessagingInfo(this.configuration.messaging())
                 .registry(this.messageRegistry)
                 .build();

@@ -9,6 +9,7 @@ plugins {
     this.id("net.kyori.blossom") version "1.2.0"
     this.id("xyz.jpenilla.run-paper") version "1.0.6" apply false
     this.id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
+    this.`maven-publish`
 
 }
 
@@ -19,6 +20,7 @@ subprojects {
     this.apply(plugin = "java-library")
     this.apply(plugin = "net.kyori.blossom")
     this.apply(plugin = "com.github.johnrengelman.shadow")
+    this.apply(plugin = "maven-publish")
 
     this.java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 

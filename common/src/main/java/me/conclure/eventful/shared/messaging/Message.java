@@ -3,15 +3,13 @@ package me.conclure.eventful.shared.messaging;
 import me.conclure.eventful.shared.Utility;
 import me.conclure.eventful.shared.messaging.type.MessageType;
 
-import java.util.concurrent.CompletableFuture;
-
 public class Message<T> {
     private final MessageDraft<T> draft;
-    private final MessageCenter center;
+    private final String signature;
 
-    public Message(MessageDraft<T> draft, MessageCenter center) {
+    public Message(MessageDraft<T> draft, String signature) {
         this.draft = draft;
-        this.center = center;
+        this.signature = signature;
     }
 
     @Utility
@@ -29,6 +27,6 @@ public class Message<T> {
     }
 
     public String signature() {
-        return this.center.signature();
+        return this.signature;
     }
 }

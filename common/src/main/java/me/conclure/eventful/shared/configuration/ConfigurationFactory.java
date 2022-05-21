@@ -10,10 +10,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public interface ConfigurationFactory {
-    ConfigurationFactory GSON = path -> GsonConfigurationLoader.builder()
-            .sink(() -> Files.newBufferedWriter(path, StandardCharsets.UTF_8))
-            .source(() -> Files.newBufferedReader(path,StandardCharsets.UTF_8))
-            .build();
+    ConfigurationFactory GSON = new ConfigurationFactory() {
+        @Override
+        public String fileExtension() {
+            return ".json";
+        }
+
+        @Override
+        public ConfigurationLoader<? extends ConfigurationNode> create(Path path) {
+            return GsonConfigurationLoader.builder()
+                    .sink(() -> Files.newBufferedWriter(path, StandardCharsets.UTF_8))
+                    .source(() -> Files.newBufferedReader(path, StandardCharsets.UTF_8))
+                    .build();
+        }
+    };
+
+    String fileExtension();
 
     ConfigurationLoader<? extends ConfigurationNode> create(Path path);
 

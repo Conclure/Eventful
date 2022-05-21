@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-public interface Repository<T,I> extends Iterable<T> {
+public interface Repository<T,I> extends Iterable<T>, IdObtainer<T,I> {
     static <T,I> Repository<T,I> create(Function<I, T> factory, Function<T, I> idMapper) {
         return new RepositoryImpl<>(new HashMap<>(1,.9f),factory,idMapper);
     }
@@ -20,8 +20,6 @@ public interface Repository<T,I> extends Iterable<T> {
     }
 
     T getOrCreate(I id);
-
-    I getId(T object);
 
     Nil<T> getIfPresent(I id);
 
